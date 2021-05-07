@@ -45,6 +45,7 @@
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
+
 /* Definitions for defaultTask */
 //osThreadId_t defaultTaskHandle;
 //const osThreadAttr_t defaultTask_attributes = {
@@ -54,6 +55,15 @@ UART_HandleTypeDef huart3;
 //};
 /* USER CODE BEGIN PV */
 extern USBD_HandleTypeDef hUsbDeviceFS;
+
+struct mouseHID_t{
+		uint8_t buttons;
+		int8_t x;
+		int8_t y;
+		int8_t wheel;
+	};
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -61,10 +71,12 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
+
 //void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-
+void threadLed(void *argument);
+void threadOne(void *argument);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -79,17 +91,7 @@ static void MX_USART3_UART_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	struct mouseHID_t{
-		uint8_t buttons;
-		int8_t x;
-		int8_t y;
-		int8_t wheel;
-	};
-	struct mouseHID_t mouseHID;
-	mouseHID.buttons = 0;
-	mouseHID.x = 10;
-	mouseHID.y = 0;
-	mouseHID.wheel = 0;
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -117,7 +119,7 @@ int main(void)
   /* USER CODE END 2 */
 
   /* Init scheduler */
-  //osKernelInitialize();
+  osKernelInitialize();
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -141,6 +143,8 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  osThreadNew(threadLed,NULL,NULL);
+  osThreadNew(threadOne,NULL,NULL);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -148,7 +152,7 @@ int main(void)
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
-  //osKernelStart();
+  osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
@@ -158,9 +162,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  mouseHID.x = 10;
-	  USBD_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&mouseHID, sizeof(struct mouseHID_t));
-	  HAL_Delay(1000);
+
   }
   /* USER CODE END 3 */
 }
@@ -316,6 +318,24 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void threadLed(void *argument){
+	while(1){
+		HAL_GPIO_TogglePin(LD2_GPIO_Port,LD2_Pin);
+		HAL_Delay(1000);
+	}
+}
+
+void threadOne(void *argument){
+	struct mouseHID_t mouseHID;
+	while(1){
+		mouseHID.buttons = 0;
+		mouseHID.x = 10;
+		mouseHID.y = 0;
+		mouseHID.wheel = 0;
+		USBD_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&mouseHID, sizeof(struct mouseHID_t));
+		HAL_Delay(1000);
+	}
+}
 
 /* USER CODE END 4 */
 
